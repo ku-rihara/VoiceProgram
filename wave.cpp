@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <random>
+#include<assert.h>
 #include"wave.h"
 using namespace std;
 
@@ -123,134 +124,6 @@ void wave_write_8bit_mono(MONO_PCM* pcm, const char* file_name)
 }
 
 
-void wave_read_8bit_stereo(STEREO_PCM* pcm, const char* file_name)
-{
-	FILE* file;
-	char riff_chunk_ID[4];
-	long riff_chunk_size;
-	char file_format_type[4];
-	char fmt_chunk_ID[4];
-	long fmt_chunk_size;
-	short wave_format_type;
-	short channel;
-	long samples_per_sec;
-	long bytes_per_sec;
-	short block_size;
-	short bits_per_sample;
-	char data_chunk_ID[4];
-	long data_chunk_size;
-	unsigned char data;
-	int n;
-	if (fopen_s(&file, file_name, "rb") != 0) {
-		return;
-	}
-
-	// WAVファイルのヘッダ情報を読み込む
-	fread(riff_chunk_ID, 1, 4, file);
-	fread(&riff_chunk_size, 4, 1, file);
-	fread(file_format_type, 1, 4, file);
-	fread(fmt_chunk_ID, 1, 4, file);
-	fread(&fmt_chunk_size, 4, 1, file);
-	fread(&wave_format_type, 2, 1, file);
-	fread(&channel, 2, 1, file);
-	fread(&samples_per_sec, 4, 1, file);
-	fread(&bytes_per_sec, 4, 1, file);
-	fread(&block_size, 2, 1, file);
-	fread(&bits_per_sample, 2, 1, file);
-	fread(data_chunk_ID, 1, 4, file);
-	fread(&data_chunk_size, 4, 1, file);
-
-
-	pcm->fs = samples_per_sec; /* 標本化周波数 */
-	pcm->bits = bits_per_sample; /* 量子化精度 */
-	pcm->length = data_chunk_size / 2; /* 音データの長さ */
-	pcm->sL.resize(pcm->length); /* メモリの確保 */
-	pcm->sR.resize(pcm->length); /* メモリの確保 */
-
-	// 音データを読み込む
-	for (n = 0; n < pcm->length; n++)
-	{
-		fread(&data, 2, 1, file); /* 音データ（Lチャンネル）の読み取り */
-		pcm->sL[n] = ((double)data - 128.0) / 128.0; /* 音データを-1以上1未満の範囲に正規化する */
-
-		fread(&data, 2, 1, file); /* 音データ（Rチャンネル）の読み取り */
-		pcm->sR[n] = ((double)data - 128.0) / 128.0; /* 音データを-1以上1未満の範囲に正規化する */
-	}
-
-	fclose(file);
-}
-
-void wave_write_8bit_stereo(STEREO_PCM* pcm, const char* file_name)
-{
-	FILE* file;
-	char riff_chunk_ID[4] = { 'R', 'I', 'F', 'F' };
-	long riff_chunk_size = 36 + pcm->length * 2;
-	char file_format_type[4] = { 'W', 'A', 'V', 'E' };
-
-	char fmt_chunk_ID[4] = { 'f', 'm', 't', ' ' };
-	long fmt_chunk_size = 16;
-	short wave_format_type = 1;
-	short channel = 2;
-	long samples_per_sec = pcm->fs; /* 標本化周波数 */
-	long bytes_per_sec = pcm->fs * pcm->bits / 8 * 2;
-	short block_size = short(pcm->bits / 8 * 2);
-	short bits_per_sample = short(pcm->bits); /* 量子化精度 */
-
-	char data_chunk_ID[4] = { 'd', 'a', 't', 'a' };
-	long data_chunk_size = pcm->length * 2;
-
-	if (fopen_s(&file, file_name, "wb") != 0) {
-		return;
-	}
-	// WAVファイルのヘッダ情報を書き込む
-	fwrite(riff_chunk_ID, 1, 4, file);
-	fwrite(&riff_chunk_size, 4, 1, file);
-	fwrite(file_format_type, 1, 4, file);
-	fwrite(fmt_chunk_ID, 1, 4, file);
-	fwrite(&fmt_chunk_size, 4, 1, file);
-	fwrite(&wave_format_type, 2, 1, file);
-	fwrite(&channel, 2, 1, file);
-	fwrite(&samples_per_sec, 4, 1, file);
-	fwrite(&bytes_per_sec, 4, 1, file);
-	fwrite(&block_size, 2, 1, file);
-	fwrite(&bits_per_sample, 2, 1, file);
-	fwrite(data_chunk_ID, 1, 4, file);
-	fwrite(&data_chunk_size, 4, 1, file);
-
-	// 音データを書き込む
-	for (int n = 0; n < pcm->length; n++)
-	{
-		double sL = (pcm->sL[n] + 1.0) / 2.0 * 256.0;
-
-		if (sL > 255.0)
-		{
-			sL = 255.0; /* クリッピング */
-		}
-		else if (sL < 0.0)
-		{
-			sL = 0.0; /* クリッピング */
-		}
-
-		unsigned char data = static_cast<unsigned char>(round(sL)); /* 四捨五入 */
-		fwrite(&data, 2, 1, file); /* 音データ（Lチャンネル）の書き出し */
-
-		double sR = (pcm->sR[n] + 1.0) / 2.0 * 256.0;
-
-		if (sR > 255.0)
-		{
-			sR = 255.0; /* クリッピング */
-		}
-		else if (sR < 0.0)
-		{
-			sR = 0.0; /* クリッピング */
-		}
-
-		data = static_cast<unsigned char>(round(sR)); /* 四捨五入 */
-		fwrite(&data, 2, 1, file); /* 音データ（Rチャンネル）の書き出し */
-	}
-
-	fclose(file);
-}
 
 void wave_read_16bit_mono(MONO_PCM* pcm, const char* file_name)
 {
@@ -390,7 +263,7 @@ void wave_write_16bit_mono(MONO_PCM* pcm, const char* file_name)
 }
 
 
-void wave_read_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
+void WaveReadStereo(STEREO_PCM* pcm, const char* file_name, int bits_per_sample)
 {
 	FILE* file;
 	char riff_chunk_ID[4];
@@ -403,14 +276,16 @@ void wave_read_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	long samples_per_sec;
 	long bytes_per_sec;
 	short block_size;
-	short bits_per_sample;
+	short bits_per_sample_read;
 	char data_chunk_ID[4];
 	long data_chunk_size;
 	short data;
 	int n;
+
 	if (fopen_s(&file, file_name, "rb") != 0) {
 		return;
 	}
+
 	fread(riff_chunk_ID, 1, 4, file);
 	fread(&riff_chunk_size, 4, 1, file);
 	fread(file_format_type, 1, 4, file);
@@ -421,29 +296,50 @@ void wave_read_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	fread(&samples_per_sec, 4, 1, file);
 	fread(&bytes_per_sec, 4, 1, file);
 	fread(&block_size, 2, 1, file);
-	fread(&bits_per_sample, 2, 1, file);
+	fread(&bits_per_sample_read, 2, 1, file);
 	fread(data_chunk_ID, 1, 4, file);
 	fread(&data_chunk_size, 4, 1, file);
 
+	// ビット深度が一致しているか確認
+	assert(bits_per_sample_read == bits_per_sample);
+		
 	pcm->fs = samples_per_sec; /* 標本化周波数 */
-	pcm->bits = bits_per_sample; /* 量子化精度 */
-	pcm->length = data_chunk_size / 4; /* 音データの長さ */
+	pcm->bits = bits_per_sample_read; /* 量子化精度 */
+	pcm->length = data_chunk_size / (bits_per_sample / 8 * 2); /* 音データの長さ */
 	pcm->sL.resize(pcm->length);
 	pcm->sR.resize(pcm->length);
 
 	for (n = 0; n < pcm->length; n++)
 	{
-		fread(&data, 2, 1, file);/* 音データ（Lチャンネル）の読み取り */
-		pcm->sL[n] = (double)data / 32768.0; /* 音データを-1以上1未満の範囲に正規化する */
+		if (bits_per_sample == 16) {
+			fread(&data, 2, 1, file); /* 音データ（Lチャンネル）の読み取り */
+			pcm->sL[n] = (double)data / 32768.0; /* 音データを-1以上1未満の範囲に正規化する */
 
-		fread(&data, 2, 1, file);/* 音データ（Rチャンネル）の読み取り */
-		pcm->sR[n] = (double)data / 32768.0; /* 音データを-1以上1未満の範囲に正規化する */
+			fread(&data, 2, 1, file); /* 音データ（Rチャンネル）の読み取り */
+			pcm->sR[n] = (double)data / 32768.0; /* 音データを-1以上1未満の範囲に正規化する */
+		}
+		else if (bits_per_sample == 8) {
+			unsigned char udata;
+			fread(&udata, 1, 1, file); /* 音データ（Lチャンネル）の読み取り */
+			pcm->sL[n] = (double)(udata - 128) / 128.0; /* 音データを-1以上1未満の範囲に正規化する */
+
+			fread(&udata, 1, 1, file); /* 音データ（Rチャンネル）の読み取り */
+			pcm->sR[n] = (double)(udata - 128) / 128.0; /* 音データを-1以上1未満の範囲に正規化する */
+		}
+		else if (bits_per_sample == 32) {
+			int data32;
+			fread(&data32, 4, 1, file); /* 音データ（Lチャンネル）の読み取り */
+			pcm->sL[n] = (double)data32 / 2147483648.0; /* 音データを-1以上1未満の範囲に正規化する */
+
+			fread(&data32, 4, 1, file); /* 音データ（Rチャンネル）の読み取り */
+			pcm->sR[n] = (double)data32 / 2147483648.0; /* 音データを-1以上1未満の範囲に正規化する */
+		}
 	}
 
 	fclose(file);
 }
 
-void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
+void WaveWriteStereo(STEREO_PCM* pcm, const char* file_name, int bits_per_sample)
 {
 	FILE* file;
 	char riff_chunk_ID[4];
@@ -456,13 +352,14 @@ void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	long samples_per_sec;
 	long bytes_per_sec;
 	short block_size;
-	short bits_per_sample;
+	short bits_per_sample_write;
 	char data_chunk_ID[4];
 	long data_chunk_size;
 	double sL;
 	double sR;
 	short data;
 	int n;
+
 	if (fopen_s(&file, file_name, "wb") != 0) {
 		return;
 	}
@@ -471,7 +368,7 @@ void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	riff_chunk_ID[1] = 'I';
 	riff_chunk_ID[2] = 'F';
 	riff_chunk_ID[3] = 'F';
-	riff_chunk_size = 36 + pcm->length * 4;
+	riff_chunk_size = 36 + pcm->length * (bits_per_sample / 8 * 2);
 	file_format_type[0] = 'W';
 	file_format_type[1] = 'A';
 	file_format_type[2] = 'V';
@@ -485,15 +382,15 @@ void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	wave_format_type = 1;
 	channel = 2;
 	samples_per_sec = pcm->fs; /* 標本化周波数 */
-	bytes_per_sec = pcm->fs * pcm->bits / 8 * 2;
-	block_size = short(pcm->bits / 8 * 2);
-	bits_per_sample = short(pcm->bits); /* 量子化精度 */
+	bytes_per_sec = pcm->fs * bits_per_sample / 8 * 2;
+	block_size = short(bits_per_sample / 8 * 2);
+	bits_per_sample_write = short(bits_per_sample); /* 量子化精度 */
 
 	data_chunk_ID[0] = 'd';
 	data_chunk_ID[1] = 'a';
 	data_chunk_ID[2] = 't';
 	data_chunk_ID[3] = 'a';
-	data_chunk_size = pcm->length * 4;
+	data_chunk_size = pcm->length * (bits_per_sample / 8 * 2);
 
 	fwrite(riff_chunk_ID, 1, 4, file);
 	fwrite(&riff_chunk_size, 4, 1, file);
@@ -505,39 +402,46 @@ void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name)
 	fwrite(&samples_per_sec, 4, 1, file);
 	fwrite(&bytes_per_sec, 4, 1, file);
 	fwrite(&block_size, 2, 1, file);
-	fwrite(&bits_per_sample, 2, 1, file);
+	fwrite(&bits_per_sample_write, 2, 1, file);
 	fwrite(data_chunk_ID, 1, 4, file);
 	fwrite(&data_chunk_size, 4, 1, file);
 
 	for (n = 0; n < pcm->length; n++)
 	{
-		sL = (pcm->sL[n] + 1.0) / 2.0 * 65536.0;
+		if (bits_per_sample == 16) {
+			sL = (pcm->sL[n] + 1.0) / 2.0 * 65536.0;
+			sR = (pcm->sR[n] + 1.0) / 2.0 * 65536.0;
 
-		if (sL > 65535.0)
-		{
-			sL = 65535.0; /* クリッピング */
+			if (sL > 65535.0) sL = 65535.0;
+			else if (sL < 0.0) sL = 0.0;
+
+			if (sR > 65535.0) sR = 65535.0;
+			else if (sR < 0.0) sR = 0.0;
+
+			data = (short)((int)(sL + 0.5) - 32768);
+			fwrite(&data, 2, 1, file);
+
+			data = (short)((int)(sR + 0.5) - 32768);
+			fwrite(&data, 2, 1, file);
 		}
-		else if (sL < 0.0)
-		{
-			sL = 0.0; /* クリッピング */
+		else if (bits_per_sample == 32) {
+			int data32L, data32R;
+
+			sL = (pcm->sL[n] + 1.0) / 2.0 * 2147483648.0;
+			sR = (pcm->sR[n] + 1.0) / 2.0 * 2147483648.0;
+
+			if (sL > 2147483647.0) sL = 2147483647.0;
+			else if (sL < -2147483648.0) sL = -2147483648.0;
+
+			if (sR > 2147483647.0) sR = 2147483647.0;
+			else if (sR < -2147483648.0) sR = -2147483648.0;
+
+			data32L = (int)(sL + 0.5);
+			data32R = (int)(sR + 0.5);
+
+			fwrite(&data32L, 4, 1, file);
+			fwrite(&data32R, 4, 1, file);
 		}
-
-		data = (short)((int)(sL + 0.5) - 32768); /* 四捨五入とオフセットの調節 */
-		fwrite(&data, 2, 1, file); /* 音データ（Lチャンネル）の書き出し */
-
-		sR = (pcm->sR[n] + 1.0) / 2.0 * 65536.0;
-
-		if (sR > 65535.0)
-		{
-			sR = 65535.0; /* クリッピング */
-		}
-		else if (sR < 0.0)
-		{
-			sR = 0.0; /* クリッピング */
-		}
-
-		data = (short)((int)(sR + 0.5) - 32768); /* 四捨五入とオフセットの調節 */
-		fwrite(&data, 2, 1, file); /* 音データ（Rチャンネル）の書き出し */
 	}
 
 	fclose(file);
@@ -571,4 +475,23 @@ void CreateNoise(std::vector<double>& noice, int length, double amplitude) {
 	for (int i = 0; i < length; ++i) {
 		noice[i] = dis(gen);
 	}
+}
+
+void print_wav_info(const std::string& filename) {
+	std::ifstream file(filename, std::ios::binary);
+	if (!file) {
+		std::cerr << "Unable to open file: " << filename << std::endl;
+		return;
+	}
+
+	file.seekg(22); // チャネル数の位置
+	uint16_t channels;
+	file.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+
+	file.seekg(34); // ビット深度の位置
+	uint16_t bits_per_sample;
+	file.read(reinterpret_cast<char*>(&bits_per_sample), sizeof(bits_per_sample));
+
+	std::cout << "Channels: " << channels << std::endl;
+	std::cout << "Bits per sample: " << bits_per_sample << std::endl;
 }

@@ -22,7 +22,7 @@ void SoundWave::Init() {
 	CreateOriginalWave(200);//元音源を作成
 
 	CreateWave();//波作成
-	wave_write_16bit_stereo(&voicePcm_, "VoiceWave.wav");
+	WaveWriteStereo(&voicePcm_, "VoiceWave.wav",16);
 	////書き出した音を読み込む
 	voice_.handle = Novice::LoadAudio("./VoiceWave.wav");
 }
@@ -59,16 +59,22 @@ void SoundWave::CreateWave() {
 
 	CreateSpeechVoice(voicePcm_, text);//テキストから音声作る
 
-	synthePcm_.fs = SampleFs;
-	synthePcm_.bits = 16;
-	synthePcm_.length = int(voicePcm_.length);
-	synthePcm_.sR.resize(synthePcm_.length);
-	synthePcm_.sL.resize(synthePcm_.length);
-
-	CreateSynthSound(synthePcm_, 440);
-
+	/*STEREO_PCM tempPcm;*/
+	CreateSynthSound(machiningPcm_, 440);
+	/*WaveReadStereo(&tempPcm, "voiceactress100_014.wav",32);*/
+	
+	/*machiningPcm_.fs = tempPcm.fs;
+	machiningPcm_.bits = tempPcm.bits;
+	machiningPcm_.length = tempPcm.length;
+	machiningPcm_.sL.resize(machiningPcm_.length);
+	machiningPcm_.sR.resize(machiningPcm_.length);
+	for (int n = 0; n < machiningPcm_.length; n++) {
+		machiningPcm_.sL[n] = tempPcm.sL[n];
+		machiningPcm_.sR[n] = tempPcm.sR[n];
+	}*/
 	Vocoder();
-	wave_write_16bit_stereo(&pcm2_, "ex7_4kk.wav");
+		
+	WaveWriteStereo(&pcm2_, "ex7_4kk.wav", 16);
 
 }
 
@@ -293,6 +299,7 @@ bool SoundWave::isVowel(char c) {
 }
 
 void SoundWave::Vocoder() {
+
 	pcm2_.fs = SampleFs;
 	pcm2_.bits = 16;
 	pcm2_.length = int(voicePcm_.length);
@@ -312,7 +319,7 @@ void SoundWave::Vocoder() {
 	std::vector<double>w(N);
 	w = HanningWindow(N);//ハニング窓
 
-	int numberOfFrame = (synthePcm_.length - N / 2) / (N / 2); /* フレームの数 */
+	int numberOfFrame = (machiningPcm_.length - N / 2) / (N / 2); /* フレームの数 */
 	int bandWidth = 8;
 	int numberOfBand = N / 2 / bandWidth;
 	int offset;
@@ -322,7 +329,7 @@ void SoundWave::Vocoder() {
 		/* X(n) */
 		for (int n = 0; n < N; n++)
 		{
-			xR[n].real(synthePcm_.sR[offset + n] * w[n]);
+			xR[n].real(machiningPcm_.sR[offset + n] * w[n]);
 			xR[n].imag(0.0);
 
 		}
@@ -410,4 +417,6 @@ void SoundWave::CreateSynthSound(STEREO_PCM& output, double frequency) {
 			phase -= 1.0;
 		}
 	}
+	frequency;
+	/*wave_read_stereo(&output, "voiceactress100_064.wav");*/
 }

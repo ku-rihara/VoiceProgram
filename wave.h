@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include<vector>
+#include<string>
 
 
 const double M_PI = 3.141592653589793;
@@ -27,17 +28,17 @@ void wave_read_8bit_mono(MONO_PCM* pcm, const char* file_name);
 
 void wave_write_8bit_mono(MONO_PCM* pcm, const char* file_name);
 
-void wave_read_8bit_stereo(STEREO_PCM* pcm, const char* file_name);
-
-void wave_write_8bit_stereo(STEREO_PCM* pcm, const char* file_name);
-
 void wave_read_16bit_mono(MONO_PCM* pcm, const char* file_name);
 
 void wave_write_16bit_mono(MONO_PCM* pcm, const char* file_name);
 
-void wave_read_16bit_stereo(STEREO_PCM* pcm, const char* file_name);
+void WaveReadStereo(STEREO_PCM* pcm, const char* file_name, int bits_per_sample);
 
-void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name);
+void WaveWriteStereo(STEREO_PCM* pcm, const char* file_name, int bits_per_sample);
+
+//void wave_read_16bit_stereo(STEREO_PCM* pcm, const char* file_name);
+//
+//void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name);
 
 /// <summary>
 /// サイン波
@@ -51,3 +52,4 @@ void SineWave_Mono(MONO_PCM* pcm, double f0, double a, int ofset, int duration);
 
 void CreateNoise(std::vector<double>& noice, int length, double amplitude);
 
+void print_wav_info(const std::string& filename);

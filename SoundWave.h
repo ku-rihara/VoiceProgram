@@ -22,8 +22,8 @@ public:
 public:
 	STEREO_PCM originalpcm_;
 	STEREO_PCM voicePcm_;
-	STEREO_PCM synthePcm_;
 	STEREO_PCM pcm2_;
+	STEREO_PCM machiningPcm_;
 	int totalLength_;
 	double pronunciationTime_ = 0.3;//発音時間
 	float playbackPos_;
