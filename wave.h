@@ -49,3 +49,5 @@ void wave_write_16bit_stereo(STEREO_PCM* pcm, const char* file_name);
 /// <param name="音を鳴らす時間"></param>
 void SineWave_Mono(MONO_PCM* pcm, double f0, double a, int ofset, int duration);
 
+void CreateNoise(std::vector<double>& noice, int length, double amplitude);
+

@@ -2,14 +2,10 @@
 #include"WindowFunction.h"
 #include"IIR_Filter.h"
 #include"FFT.h"
-#include<map>
-#include <string>
 #include<random>
 #include"InputManager.h"
 
-const int SampleFs = 44100;
-const float deltatime = 1 / 60.0f;
-using FormantMap = std::map<std::string, std::pair<std::vector<double>, double>>;
+
 void SoundWave::Init() {
 	//音声PCM初期化
 	voicePcm_.fs = SampleFs;
@@ -23,7 +19,7 @@ void SoundWave::Init() {
 
 	playbackPos_ = 0;//再生位置
 	isPlayBack_ = false;//再生フラグ
-	CreateOriginalWave(300);//元音源を作成
+	CreateOriginalWave(200);//元音源を作成
 
 	CreateWave();//波作成
 	wave_write_16bit_stereo(&voicePcm_, "VoiceWave.wav");
@@ -59,7 +55,7 @@ void SoundWave::Draw() {
 
 void SoundWave::CreateWave() {
 
-	std::string text = "kakikukeko"; // 発話させたいテキスト
+	std::string text = "aiueo"; // 発話させたいテキスト
 
 	CreateSpeechVoice(voicePcm_, text);//テキストから音声作る
 
@@ -221,9 +217,13 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 		std::string currentChar(1, c);
 
 		// 子音と母音を区別して取得
-		if (isConsonant(c)) {//子音の処理
-			consonant += c;//子音を格納する変数に入れる
+		if (isConsonant(c)) {
+			//子音を格納する変数に入れる
+			consonant += c;
 			//ここに子音特有のノイズを加える
+			noise.resize(noiseLength,0.0);
+			CreateNoise(noise, noiseLength, 0.04);
+			
 		}
 		else if (isVowel(c)) {//母音の処理
 			vowel = currentChar;
@@ -235,7 +235,7 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 			if (formantMap.find(combination) != formantMap.end()) {		
 				// 文字列（例:ka）の組み合わせに対応するフォルマントを適用
 				for (int i = 0; i < textFreq.size(); i++) {
-					textFreq[i] = formantMap[combination].first[i] / (4 * 0.12);
+					textFreq[i] = formantMap[combination].first[i] / (4 * 0.18);
 				}
 				double vowelBandwidth = formantMap[combination].second;
 
@@ -253,7 +253,12 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 					sR[n] = copyMonoPcm_.sR[n] + fadeFactor * sR[n - 1];
 					sL[n] = copyMonoPcm_.sL[n] + fadeFactor * sL[n - 1];
 				}
-				//fade_factor;
+
+				////ノイズ追加
+				//for (int n = 0; n < noiseLength; n++) {
+				//	sR[n] += noise[n];
+				//	sL[n] += noise[n];
+				//}
 
 				// フェード処理
 				for (int n = 0; n < mosnoPcm.fs * 0.01; n++) {

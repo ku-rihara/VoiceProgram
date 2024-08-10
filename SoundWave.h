@@ -2,8 +2,13 @@
 #include<Novice.h>
 #include"wave.h"
 #include "Vector2C.h"
+#include <string>
+#include<map>
 #include<vector>
 #include<complex>
+
+const int SampleFs = 44100;
+const float deltatime = 1 / 60.0f;
 
 struct Sound {
 	int handle;
@@ -12,6 +17,8 @@ struct Sound {
 };
 
 class SoundWave {
+public:
+	using FormantMap = std::map<std::string, std::pair<std::vector<double>, double>>;
 public:
 	STEREO_PCM originalpcm_;
 	STEREO_PCM voicePcm_;
@@ -23,7 +30,9 @@ public:
 	float playbackTime_;
 	Sound voice_;
 	bool isPlayBack_;
-	
+	//ノイズ関連
+	int noiseLength = int(SampleFs * 0.01);//5ミリ秒
+	std::vector<double>noise;
 
 public:
 	void Init();
@@ -43,7 +52,7 @@ public:
 	void CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text);
 	void CreateSynthSound(STEREO_PCM& output, double frequency);
 
-	std::vector<double>generateNoise(int length, double amplitude);
-	void addConsonant(STEREO_PCM& pcm, const std::string& consonant, int start, int length, double amplitude);
+	/*std::vector<double>generateNoise(int length, double amplitude);
+	void addConsonant(STEREO_PCM& pcm, const std::string& consonant, int start, int length, double amplitude);*/
 
 };

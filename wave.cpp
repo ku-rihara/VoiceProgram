@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
+#include <random>
 #include"wave.h"
 using namespace std;
 
@@ -562,3 +563,12 @@ void SineWave_Mono(MONO_PCM* pcm, double f0, double a, int ofset, int duration) 
 	free(s);
 }
 
+void CreateNoise(std::vector<double>& noice, int length, double amplitude) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<>dis(-amplitude, amplitude);
+
+	for (int i = 0; i < length; ++i) {
+		noice[i] = dis(gen);
+	}
+}

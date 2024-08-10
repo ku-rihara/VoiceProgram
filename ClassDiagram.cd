@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="BaseScene" Collapsed="true">
+    <Position X="1" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAiAAAgRAAAAAAAAAAAiAAAAAIAICABAAAGA=</HashCode>
+      <FileName>BaseScene.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SceneManager" Collapsed="true">
+    <Position X="1" Y="6" Width="1.5" />
+    <NestedTypes>
+      <Enum Name="SceneManager::SCENE" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>SceneManager.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAQAACAAAAAAAgBAAAAAAIAAAAAAAAAAAAACAAAAAAQ=</HashCode>
+      <FileName>SceneManager.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ScenePrototype" Collapsed="true">
+    <Position X="1" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAgAABAAAAAAAAAAAAAAAAAACAEAAAAA=</HashCode>
+      <FileName>ScenePrototype.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SoundWave" Collapsed="true">
+    <Position X="3.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAQAGAhAEAABAgAAAgAAAAIAECAAABAEQCBCAAACQAA=</HashCode>
+      <FileName>SoundWave.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vector2" Collapsed="true">
+    <Position X="4" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAABAAAAAAAAAQAAAAAAAAAAAABgAAAAAAA=</HashCode>
+      <FileName>Vector2C.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Sound" Collapsed="true">
+    <Position X="3.75" Y="4.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAACAAAAAAAAAACAAAACAAAAAAA=</HashCode>
+      <FileName>SoundWave.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Yu Gothic UI" Size="9" />
+</ClassDiagram>
