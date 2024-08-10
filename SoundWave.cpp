@@ -9,7 +9,7 @@
 
 const int SampleFs = 44100;
 const float deltatime = 1 / 60.0f;
-
+using FormantMap = std::map<std::string, std::pair<std::vector<double>, double>>;
 void SoundWave::Init() {
 	//音声PCM初期化
 	voicePcm_.fs = SampleFs;
@@ -23,7 +23,7 @@ void SoundWave::Init() {
 
 	playbackPos_ = 0;//再生位置
 	isPlayBack_ = false;//再生フラグ
-	CreateOriginalWave(200);//元音源を作成
+	CreateOriginalWave(300);//元音源を作成
 
 	CreateWave();//波作成
 	wave_write_16bit_stereo(&voicePcm_, "VoiceWave.wav");
@@ -59,7 +59,7 @@ void SoundWave::Draw() {
 
 void SoundWave::CreateWave() {
 
-	std::string text = "aeiueoa"; // 発話させたいテキスト
+	std::string text = "kakikukeko"; // 発話させたいテキスト
 
 	CreateSpeechVoice(voicePcm_, text);//テキストから音声作る
 
@@ -166,7 +166,7 @@ void SoundWave::WaveFilter(STEREO_PCM& stereoPcm, const std::vector <double>& fr
 
 void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text) {
 
-	double fade_factor = 0.98; // ディエンファシスの減衰率
+	double fadeFactor = 0.98; // ディエンファシスの減衰率
 
 	std::string consonant = "";//子音
 	std::string vowel = "";//母音
@@ -182,14 +182,16 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 			consonant.clear();
 		}
 	}
-	 totalLength_ = int(mosnoPcm.fs * pronunciationTime_ *count); // 合計の長さを計算
-	 playbackTime_ = float(pronunciationTime_ * count);
+	totalLength_ = int(mosnoPcm.fs * pronunciationTime_ * count); // 合計の音データの長さを計算
+	playbackTime_ = float(pronunciationTime_ * count);//再生時間
+	//音声データに合計の長さを代入
 	mosnoPcm.length = totalLength_;
 	mosnoPcm.sR.resize(int(totalLength_), 0.0);
 	mosnoPcm.sL.resize(int(totalLength_), 0.0);
 
-	int current_position = 0; // 現在の位置を管理する変数
+	int currentPosition = 0; // 現在の音データの位置を管理する変数
 
+	//1文字あたりの音データの長さ
 	int length = int(mosnoPcm.length / count);
 	STEREO_PCM copyMonoPcm_;
 	copyMonoPcm_.fs = mosnoPcm.fs;
@@ -197,58 +199,50 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 	copyMonoPcm_.length = length;
 	copyMonoPcm_.sR.resize(length);
 	copyMonoPcm_.sL.resize(length);
-	std::vector<double> vowelFreq(4);
-	std::vector<double> consonantFreq(4);
-	// 母音のフォルマントマップを初期化
-	std::map<std::string, std::pair<std::vector<double>, double>> formantMap;
+	std::vector<double> textFreq(4);
+
+
+	// フォルマントマップを初期化
+	FormantMap formantMap;
 	formantMap["a"] = { {800, 1200, 2500, 3500}, 100.0 };  // あ
 	formantMap["i"] = { {300, 2300, 2900, 3500}, 100.0 };    // い
 	formantMap["u"] = { {300, 1200, 2500, 3500}, 100.0 };    // う
 	formantMap["e"] = { {500, 1900, 2500, 3500}, 100.0 };    // え
 	formantMap["o"] = { {500, 800, 2500, 3500}, 100.0 };     // お
 
-	// 子音のフォルマントマップを初期化（仮の値）
-	std::map<std::string, std::pair<std::vector<double>, double>> consonantMap;
-	consonantMap["k"] = { {300, 1500, 2500, 3500}, 100.0 };  // か行
-	consonantMap["s"] = { {500, 2000, 3000, 4000}, 100.0 };  // さ行
-	consonantMap["t"] = { {600, 2200, 3200, 4200}, 100.0 };  // た行
-	consonantMap["n"] = { {700, 2400, 3400, 4400}, 100.0 };  // な行
+	formantMap["ka"] = { {400, 900, 2400, 3500}, 100.0 };  // か
+	formantMap["ki"] = { {500, 2000, 3000, 3500}, 100.0 };    // き
+	formantMap["ku"] = { {400, 900, 2500, 3500}, 100.0 };    // く
+	formantMap["ke"] = { {450, 1700, 2700, 3500}, 100.0 };    // け
+	formantMap["ko"] = { {450, 800, 2400, 3500}, 100.0 };     // こ
 
-	// テキストを解析して音声を生成
+	// 1文字ずつテキストを解析して音声を生成
 	for (char c : text) {
-		std::string current_char(1, c);
+		std::string currentChar(1, c);
 
 		// 子音と母音を区別して取得
-		if (isConsonant(c)) {
-			consonant += c;
+		if (isConsonant(c)) {//子音の処理
+			consonant += c;//子音を格納する変数に入れる
+			//ここに子音特有のノイズを加える
 		}
-		else if (isVowel(c)) {
-			vowel = current_char;
+		else if (isVowel(c)) {//母音の処理
+			vowel = currentChar;
 
-			if (consonant.empty() || consonantMap.find(consonant) != consonantMap.end()) {
-			
-				//フォルマントに声道の長さを反映
-				for (int i = 0; i < vowelFreq.size(); i++) {
-					vowelFreq[i] = formantMap[vowel].first[i] /(4*0.19);
+			//子音と母音との連結
+			std::string combination = consonant + vowel;
+
+			// フォルマントマップで組み合わせが存在するか確認
+			if (formantMap.find(combination) != formantMap.end()) {		
+				// 文字列（例:ka）の組み合わせに対応するフォルマントを適用
+				for (int i = 0; i < textFreq.size(); i++) {
+					textFreq[i] = formantMap[combination].first[i] / (4 * 0.12);
 				}
-				double vowel_bandwidth = formantMap[vowel].second;
+				double vowelBandwidth = formantMap[combination].second;
 
-				std::vector<double> s(length, 0.0); // 仮のデータ。実際にはフォルマントを使用
 				bool clearPCM = true;
-				// 子音がある場合は、子音のフォルマントを適用
-				if (!consonant.empty() && consonantMap.find(consonant) != consonantMap.end()) {
-				
-					//フォルマントに声道の長さを反映
-					for (int i = 0; i < consonantFreq.size(); i++) {
-						consonantFreq[i] = consonantMap[consonant].first[i] / (4 * 0.17);
-					}
-					double consonant_bandwidth = consonantMap[consonant].second;
-					WaveFilter(copyMonoPcm_, consonantFreq, consonant_bandwidth,clearPCM);
-					clearPCM = false;//子音の後の母音はクリアしない
-				}
 
 				// 母音のフォルマントを適用
-				WaveFilter(copyMonoPcm_, vowelFreq, vowel_bandwidth, clearPCM);
+				WaveFilter(copyMonoPcm_, textFreq, vowelBandwidth, clearPCM);
 
 				// ディエンファシス
 				std::vector<double> sR(length, 0.0);
@@ -256,8 +250,8 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 				sR[0] = copyMonoPcm_.sR[0];
 				sL[0] = copyMonoPcm_.sL[0];
 				for (int n = 1; n < length; n++) {
-					sR[n] = copyMonoPcm_.sR[n] + fade_factor * sR[n - 1];
-					sL[n] = copyMonoPcm_.sL[n] + fade_factor * sL[n - 1];
+					sR[n] = copyMonoPcm_.sR[n] + fadeFactor * sR[n - 1];
+					sL[n] = copyMonoPcm_.sL[n] + fadeFactor * sL[n - 1];
 				}
 				//fade_factor;
 
@@ -268,19 +262,18 @@ void SoundWave::CreateSpeechVoice(STEREO_PCM& mosnoPcm, const std::string& text)
 					sR[length - n - 1] *= (double)n / (mosnoPcm.fs * 0.01); // フェードアウト
 					sL[length - n - 1] *= (double)n / (mosnoPcm.fs * 0.01); // フェードアウト
 				}
-
+				
 				// mosnoPcm の適切な位置に波形をコピー
 				for (int n = 0; n < length; ++n) {
-					mosnoPcm.sR[current_position + n] += sR[n];
-					mosnoPcm.sL[current_position + n] += sL[n];
+					mosnoPcm.sR[currentPosition + n] += sR[n];
+					mosnoPcm.sL[currentPosition + n] += sL[n];
 				}
-				current_position += length; // 次の文字の位置を設定
+				currentPosition += length; // 次の文字の位置を設定
 			}
 
 			consonant.clear(); // 子音をリセット
 		}
 	}
-
 }
 // 子音判定関数
 bool SoundWave::isConsonant(char c) {
