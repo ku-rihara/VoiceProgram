@@ -6,25 +6,29 @@
 #include <string>
 #include<random>
 #include"InputManager.h"
+
 const int SampleFs = 44100;
+const float deltatime = 1 / 60.0f;
+
 void SoundWave::Init() {
+	//音声PCM初期化
 	voicePcm_.fs = SampleFs;
 	voicePcm_.bits = 16;
-
+	//元音源PCM初期化
 	originalpcm_.fs = SampleFs;
 	originalpcm_.bits = 16;
 	originalpcm_.length = int(originalpcm_.fs);
 	originalpcm_.sR.resize(originalpcm_.length);
 	originalpcm_.sL.resize(originalpcm_.length);
 
-	playbackPos_ = 0;
-	isPlayBack_ = false;
-	CreateOriginalWave(200);
+	playbackPos_ = 0;//再生位置
+	isPlayBack_ = false;//再生フラグ
+	CreateOriginalWave(200);//元音源を作成
 
 	CreateWave();//波作成
-	wave_write_16bit_stereo(&voicePcm_, "Wavename.wav");
+	wave_write_16bit_stereo(&voicePcm_, "VoiceWave.wav");
 	////書き出した音を読み込む
-	voice_.handle = Novice::LoadAudio("./Wavename.wav");
+	voice_.handle = Novice::LoadAudio("./VoiceWave.wav");
 }
 
 void SoundWave::Update() {
@@ -35,18 +39,21 @@ void SoundWave::Update() {
 		isPlayBack_ = true;
 	}
 	if (isPlayBack_) {
-		playbackPos_ += (1280/ playbackTime_)/60;
+		playbackPos_ += (1280/ playbackTime_)* deltatime;//みはじの法則
 	}
 }
 
 void SoundWave::Draw() {
-
+	//音の再生
 	if (voice_.isStart) {
 		Novice::PlayAudio(voice_.handle, false, 0.7f);
 		voice_.isStart = false;
 	}
+	//背景
 	Novice::DrawBox(0, 0, 1280, 720, 0, BLACK, kFillModeSolid);
+	//波可視化
 	WaveVisualize(voicePcm_, 200);
+	//再生位置
 	Novice::DrawLine(int(playbackPos_), 0, int(playbackPos_), 720, RED);
 }
 
@@ -54,7 +61,7 @@ void SoundWave::CreateWave() {
 
 	std::string text = "aeiueoa"; // 発話させたいテキスト
 
-	CreateSpeechVoice(voicePcm_, text);//音声作る
+	CreateSpeechVoice(voicePcm_, text);//テキストから音声作る
 
 	synthePcm_.fs = SampleFs;
 	synthePcm_.bits = 16;
